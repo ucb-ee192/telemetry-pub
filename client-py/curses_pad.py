@@ -8,11 +8,13 @@ MAX_CONSOLE_LINES = 10
 stdscr = None
 console_lines = ["" for _ in range(MAX_CONSOLE_LINES)]
 input_line = ""
+line_to_send = None #the line to send.  Originally None, this code sets it to some string.  Other code will have to set it back to none.
 
-height, width = 10,10 #just initial guesses.  They'll be overwritten soon.
+height, width = 10,10 #just initial guesses.  They'll be overwritten first time show is called.
 
 
-def test_code():
+def run():
+    #usually used for testing purposes.  The while true has to be located elsewhere if there's more code that needs a while true.
     while True:
     
         user_input()     
@@ -24,13 +26,15 @@ def init(stdscr_in):
     stdscr = stdscr_in
     stdscr.nodelay(1)
 
-
-    test_code()
+def init_run(stdscr_in):
+    init(stdscr_in)
+    run()
 
 
 def user_input():
     global stdscr #get the global curses instance.
     global send_user_in
+    global line_to_send 
     #get lines in.  Update handles displaying approprpriately.
 
     while True:
@@ -42,7 +46,9 @@ def user_input():
         #append the human-readable string.  Not sure if i should inlucde 127 (delete), but nikita does.
         add_input_char(chr(c))
       elif c == 10:
-        #user hits 'return'  
+        #user hits 'return'
+        line_to_send = input_line
+        #
         clear_input_line()
       elif c == 263: #apparently backspace is 263 in curses land, not 8
         delete_input_char()
@@ -96,6 +102,21 @@ def add_console_line(newline):
     console_lines.append(newline)
     console_lines = console_lines[-MAX_CONSOLE_LINES:]
 
+def append_console_line(newChar):
+    #append newChar to the most recent console line.  correctly handle \n and \r
+    
+    global console_lines
+    if newChar == '\n':
+        add_console_line("")
+    elif newChar == '\r':
+        #yup, do nothing.
+        pass
+
+    else:
+        console_lines[-1] += newChar #append new char to console lines.  I tested it, this part works
+        console_lines[-1] = console_lines[-1].encode('string-escape')
+    #toDo: how do we make sure that console lines wraps??  How do I deal with newlines?
+
 def add_input_char(newChar):
     global input_line
     input_line = input_line + newChar
@@ -138,7 +159,7 @@ def show():
     width = new_width
 
 
-
+    #2 parts currently: input line, and the console output.
     show_input_line(input_line)
     show_console(console_lines)
 
@@ -148,5 +169,5 @@ def show():
 
 if __name__ == "__main__":
     print("Hello World")
-    curses.wrapper(lambda stdscr: init(stdscr))#start up user_input
+    curses.wrapper(lambda stdscr: init_run(stdscr))#start up user_input
 

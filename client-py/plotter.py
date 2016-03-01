@@ -21,12 +21,11 @@ import serial
 
 from telemetry.parser import TelemetrySerial, DataPacket, HeaderPacket, NumericData, NumericArray
 
+#need curses because I must use that magical one line curses command to call everything else that uses curses.
 import curses
+#custom curses_pad.
+import curses_pad as cp
 
-user_in = "" #string of characters that user types before hitting return.  Always growing untill we hit return
-send_user_in = None #When user his return, this is updated to the value of user_in.  When this string is not-none, it will get sent down the pipe, and be reset to None.
-
-stdscr = None
 
 class BasePlot(object):
   """Base class / interface definition for telemetry plotter plots with a
@@ -347,7 +346,9 @@ if __name__ == "__main__":
       if next_byte is None:
         break
       try:
-        print(chr(next_byte), end='')
+        #add this byte to the most recent plot line.
+        #print(chr(next_byte), end='')
+        cp.append_console_line(chr(next_byte))
         if csv_logger[0]:
           csv_logger[0].add_char(chr(next_byte))
       except UnicodeEncodeError:
@@ -362,7 +363,6 @@ if __name__ == "__main__":
 
     plt.ion()
     plt.draw()
-    #stdscr.refresh()
 
 
   def set_plot_dialog(plot):
@@ -407,42 +407,10 @@ if __name__ == "__main__":
       print("Figured closed, exiting.")
       sys.exit()
 
-  def user_input():
-    global stdscr #get the global curses instance.
-    global send_user_in
-    global user_in #global running list of characters that the user typed in.  Clears when we hit return.
-    #get lines in.  Update handles displaying approprpriately.
-
-    while True:
-      c = stdscr.getch()
-      if c < 0:
-        #i ran out of characters to get
-        break
-      elif 32 <= c <= 127:
-        #append the human-readable string.  Not sure if i should inlucde 127 (delete), but nikita does.
-        user_in += chr(c)
-        print("User in is: " +user_in + '\r')
-      elif c == 10:
-        #user hits 'return'  
-        send_user_in = user_in
-        #update 'send user in', the list of characters to send (or have already been sent?)  
-        #send_user_in then gets used by update so it writes down what was already sent.
-
-        telemetry.serial.write(send_user_in + "\r\n") #append \r\n
-        
-        user_in = "" #clear user_in, the list of chracters that I display
-    stdscr.refresh()
-    #update()
 
 
-    #do stuff
-
-  def curses_setup(stdscr_instance):
+  def setup(stdscr_instance):
     #one-time call that sets up the curses.  Call before anyone has to use curses!
-
-    global stdscr
-    stdscr = stdscr_instance
-    stdscr.nodelay(1)
 
     fig.canvas.mpl_connect('button_press_event', on_click)
     fig.canvas.mpl_connect('close_event', on_exit)
@@ -453,29 +421,22 @@ if __name__ == "__main__":
     plt.ion()
     plt.draw()
 
+    cp.init(stdscr_instance) #init's, and then runs, curses.
+
     while True:
       update()
-      user_input()
+      cp.user_input()     
+      cp.show()
+
+      #handles transmit, based off the "transmit if it's not none" standard
+      if cp.line_to_send is not None:
+        telemetry.serial.write(cp.line_to_send + "\n\r")
+        cp.line_to_send = None
 
 
-    #while True:
-      #handle user input.
-    #  user_input()
 
 
-  curses.wrapper(lambda stdscr: curses_setup(stdscr))#start up user_input
+  curses.wrapper(lambda stdscr: setup(stdscr))#start up user_input
   #as per convention, curses.wrapper MUST run the rest of the code. 
-
-  
-  '''
-  while True:
-    ser_in = input("Serial command to send: ").encode()
-    
-
-    # TODO: proper sync semantics
-    user_in = user_in + "\r\n"
-    telemetry.serial.write(user_in)
-    telemetry.serial.write('\n'.encode())
-    print("I wrote: " + user_in)
-  '''
+  #and for some reason, i think i need to connect everything else inside the curses instance.
 
