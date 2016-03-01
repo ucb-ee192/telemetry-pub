@@ -21,6 +21,13 @@ import serial
 
 from telemetry.parser import TelemetrySerial, DataPacket, HeaderPacket, NumericData, NumericArray
 
+import curses
+
+user_in = "" #string of characters that user types before hitting return.  Always growing untill we hit return
+send_user_in = None #When user his return, this is updated to the value of user_in.  When this string is not-none, it will get sent down the pipe, and be reset to None.
+
+stdscr = None
+
 class BasePlot(object):
   """Base class / interface definition for telemetry plotter plots with a
   dependent variable vs. an scrolling independent variable (like time).
@@ -280,9 +287,18 @@ if __name__ == "__main__":
 
   csv_logger = [None]
 
-  def update(data):
+
+
+  def update_data(data):
+    update()
+    user_input()
+
+  def update():##data):
     telemetry.process_rx()
     plot_updated = False
+    global stdscr #get the global curses instance.
+
+    #print("UPDATE \r")
 
     while True:
       packet = telemetry.next_rx_packet()
@@ -344,6 +360,11 @@ if __name__ == "__main__":
       for subplot in plots_dict[0].keys():
         subplot.set_xlim([latest_indep[0] - args.span, latest_indep[0]])
 
+    plt.ion()
+    plt.draw()
+    #stdscr.refresh()
+
+
   def set_plot_dialog(plot):
     def set_plot_dialog_inner():
       got = plot.get_dep_def().get_latest_value()
@@ -386,15 +407,75 @@ if __name__ == "__main__":
       print("Figured closed, exiting.")
       sys.exit()
 
-  fig.canvas.mpl_connect('button_press_event', on_click)
-  fig.canvas.mpl_connect('close_event', on_exit)
-  ani = animation.FuncAnimation(fig, update, interval=30)
-  plt.ion()
-  plt.draw()
+  def user_input():
+    global stdscr #get the global curses instance.
+    global send_user_in
+    global user_in #global running list of characters that the user typed in.  Clears when we hit return.
+    #get lines in.  Update handles displaying approprpriately.
 
+    while True:
+      c = stdscr.getch()
+      if c < 0:
+        #i ran out of characters to get
+        break
+      elif 32 <= c <= 127:
+        #append the human-readable string.  Not sure if i should inlucde 127 (delete), but nikita does.
+        user_in += chr(c)
+        print("User in is: " +user_in + '\r')
+      elif c == 10:
+        #user hits 'return'  
+        send_user_in = user_in
+        #update 'send user in', the list of characters to send (or have already been sent?)  
+        #send_user_in then gets used by update so it writes down what was already sent.
+
+        telemetry.serial.write(send_user_in + "\r\n") #append \r\n
+        
+        user_in = "" #clear user_in, the list of chracters that I display
+    stdscr.refresh()
+    #update()
+
+
+    #do stuff
+
+  def curses_setup(stdscr_instance):
+    #one-time call that sets up the curses.  Call before anyone has to use curses!
+
+    global stdscr
+    stdscr = stdscr_instance
+    stdscr.nodelay(1)
+
+    fig.canvas.mpl_connect('button_press_event', on_click)
+    fig.canvas.mpl_connect('close_event', on_exit)
+    #ani = animation.FuncAnimation(fig, update_data, interval=30)
+    #calls update every 30 ms.  Abuses matplot lib so that matplotlib is calling the function that does all the updates...
+
+
+    plt.ion()
+    plt.draw()
+
+    while True:
+      update()
+      user_input()
+
+
+    #while True:
+      #handle user input.
+    #  user_input()
+
+
+  curses.wrapper(lambda stdscr: curses_setup(stdscr))#start up user_input
+  #as per convention, curses.wrapper MUST run the rest of the code. 
+
+  
+  '''
   while True:
-    user_in = input("Serial command to send: ").encode()
+    ser_in = input("Serial command to send: ").encode()
+    
+
     # TODO: proper sync semantics
+    user_in = user_in + "\r\n"
     telemetry.serial.write(user_in)
     telemetry.serial.write('\n'.encode())
+    print("I wrote: " + user_in)
+  '''
 
