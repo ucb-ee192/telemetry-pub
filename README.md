@@ -13,6 +13,9 @@ The [protocol spec](../master/docs/protocol.tex) defines a binary wire format al
 ## Changelog
 ### From Version 0.0 (Spring 2015)
 - Platform automatically detected by just including `telemetry.h`, no need to manually specify `telemetry-arduino.h` or `telemetry-mbed.h`.
+### From Version 1.0 (Spring 2016)
+- Added support for using RPC on the embedded side.  Client code now has a command-prompt style interface, that filters out printfs from the telemetry stream cleanly.  Command-prompt also allows user to type commands, and then send later to the embedded side.
+
 
 ## Quickstart
 ### Plotter setup
@@ -32,11 +35,13 @@ Other software can be installed through pip, Python's package manager. pip is lo
 `pip install six python-dateutil pyparsing`
 
 #### On Linux
-For Linux platforms, the required software should be available from the OS package manager.
+For Linux platforms, the required software should be available from the OS package manager
 
 On Debian-based platforms, including Ubuntu, the installation commands for the necessary packages are:
 
-`TODO: commands`
+sudo pip install future --upgrade
+
+sudo pip install matplotlib
 
 ### Transmitter library setup
 Transmitter library sources are in `telemetry/server-cpp`. Add the folder to your include search directory and add all the `.cpp` files to your build. Your platform should be automatically detected based on common `#define`s, like `ARDUINO` for Arduino targets and `__MBED__` for mbed targets.
@@ -94,7 +99,7 @@ After instantiating a data object, you can also optionally specify additional pa
 
 Note that there is a limit on how many data objects any telemetry object can have (this is used to size some internal data structures). This can be set by compiler-defining `TELEMETRY_DATA_LIMIT`. The default is 16.
 
-Once the data objects have been set up, transmit the data definitions:
+Once the data objects have been set up, transmit the data definitions.  This can be done only once from the embedded side:
 ```c++
 telemetry_obj.transmit_header();
 ```
@@ -126,7 +131,7 @@ while (telemetry_obj.receive_available()) {
   uint8_t rx = telemetry_obj.read_receive();
   if (rx == '\n') {
     *inptr = '\0';  // optionally append the string terminator
-    // do something with the contents of inbuf here
+    // do something with the contents of inbuf here, such as calling mbed-RPC.
     inptr = inbuf;  // reset the received byte pointer
   } else {
     *inptr = rx;
@@ -150,7 +155,7 @@ The plotter must be running when the header is transmitted, otherwise it will fa
 
 This simple plotter graphs all the data against a selected independent variable (like time). Numeric data is plotted as a line graph and array-numeric data is plotted as a waterfall / spectrograph-style graph. Regular UART data (like from `printf`s) will be routed to the console. All received data, including from `printf`s, is logged to a CSV. A new CSV is created each time a new header packet is received, with a timestamped filename. This can be disabled by giving an empty filename prefix.
 
-You can double-click a plot to inspect its latest value numerically and optionally remotely set it to a new value. You can also send non-telemetry data by typing in the console (should have a `Serial command to send: ` prompt); note that data is buffered (not sent) until you hit enter. A newline (`\n`) is included at the end of whatever you type.
+You can double-click a plot to inspect its latest value numerically and optionally remotely set it to a new value. You can also send non-telemetry data by typing in the console (should have a `>>> ` prompt); note that data is buffered (not sent) until you hit enter. A newline (`\n\r`) is included at the end of whatever you type.  The command prompt also echos back any command that is sent to the embedded side.
 
 If you feel really adventurous, you can also try to mess with the code to plot things in different styles. For example, the plot instantiation function from a received header packet is in `subplots_from_header`. The default just creates a line plot for numeric data and a waterfall plot for array-numeric data. You can make it do fancier things, like overlay a numerical detected track position on the raw camera waterfall plot.
 
@@ -159,18 +164,12 @@ Bandwidth limits: the amount of data you can send is limited by your microcontro
 - Reducing precision. A 8-bit integer is smaller than a 32-bit integer. If all you're doing is plotting, the difference may be visually imperceptible.
 - Decimating samples. Sending every nth sample will reduce the data rate by n. Again, the difference may be imperceptible if plotting, but you may also lose important high frequency components. Use with caution.
 
-## Future Work
-These are planned features for the very near future:
-
-### Plotter GUI
-- Major code cleanup.
-- Multiple visualizations styles (including single-frame mode for arrays).
-
 ## Known Issues
 ### Transmitter Library
 - No header resend request, so the plotter GUI must be started before the transmitter starts.
 - No DMA support.
 - No CRC or FEC support.
+- printf's being called during do_io really messes things up.
 
 ### Plotter GUI
 - Waterfall / spectrogram style plotting is CPU intensive and inefficient.
