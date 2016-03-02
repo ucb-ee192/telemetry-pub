@@ -13,9 +13,10 @@ The [protocol spec](../master/docs/protocol.tex) defines a binary wire format al
 ## Changelog
 ### From Version 0.0 (Spring 2015)
 - Platform automatically detected by just including `telemetry.h`, no need to manually specify `telemetry-arduino.h` or `telemetry-mbed.h`.
-### From Version 1.0 (Spring 2016)
-- Added support for using RPC on the embedded side.  Client code now has a command-prompt style interface, that filters out printfs from the telemetry stream cleanly.  Command-prompt also allows user to type commands, and then send later to the embedded side.
 
+### From Version 1.0 (Spring 2016)
+- Added client support for using RPC on the embedded side.  Client code now has a command-prompt style interface, that filters out printfs from the telemetry stream cleanly.  Command-prompt also allows user to type commands, and then send later to the embedded side.
+- For use with the mbed RPC library. (https://developer.mbed.org/cookbook/Interfacing-Using-RPC)
 
 ## Quickstart
 ### Plotter setup
