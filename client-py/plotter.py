@@ -210,9 +210,10 @@ def subplots_from_header(packet, figure, indep_def, indep_span=10000):
                                              indep_span)
     plots_dict[ax] = [plot]
 
-    print("Found dependent data %s" % data_def.internal_name)
+    print("Found dependent data %s \n\r" % data_def.internal_name)
 
-  print("Parsed header")
+  #need \n\r in curses
+  print("Parsed header \n\r")
   return plots_dict
 
 class CsvLogger(object):
