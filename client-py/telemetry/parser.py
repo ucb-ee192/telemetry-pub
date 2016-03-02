@@ -462,11 +462,9 @@ class TelemetrySerial(object):
 
             self.rx_packets.append(decoded)
           except TelemetryDeserializationError as e:
-            pass
-            #print("Deserialization error: %s" % repr(e)) # TODO prettier cleaner
+            print("Deserialization error: %s" % repr(e)) # TODO prettier cleaner
           except IndexError as e:
-            pass
-            #print("Index error: %s" % repr(e))
+            print("Index error: %s" % repr(e))
           self.packet_buffer = deque()
 
           self.decoder_pos = 0
