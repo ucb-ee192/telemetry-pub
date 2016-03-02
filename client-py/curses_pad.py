@@ -1,5 +1,6 @@
 import curses
 import time
+import sys
 
 MAX_CONSOLE_LINES = 10
 #maximum number of lines to show on the console.
@@ -67,6 +68,13 @@ def show_input_line(text):
     input_win.addstr(0, 0, ">>> " + text)
     input_win.refresh()
 
+
+
+def is_ascii(s):
+    return all(ord(c) < 128 for c in s)
+
+
+
 def show_console(lines):
     #show 'lines' on the console
     global width
@@ -78,7 +86,20 @@ def show_console(lines):
         #print i, line
         #print(i)
         #print(line.strip())
-        console_pad.addstr(i+1, 0, line.strip())
+        if is_ascii(line): #filter out all the backslashes, that's most likely some binary stuff that you don't want to print
+            try:
+                console_pad.addstr(i+1, 0, line.strip())
+            except:
+                e = sys.exc_info()[0]
+                add_console_line("Error In print: " + str(e))
+                #we should probably remove the offending line
+                console_lines[i] = ""
+                #print("Error was " + str(e))
+        else:
+            line = "Not Ascii"
+            console_pad.addstr(i+1, 0, line.strip())
+
+
 
     #fill the console with junk for testing
     #for y in range(0, 99):
@@ -114,7 +135,10 @@ def append_console_line(newChar):
 
     else:
         console_lines[-1] += newChar #append new char to console lines.  I tested it, this part works
-        console_lines[-1] = console_lines[-1].encode('string-escape')
+        #making sure that console_lines don't include nasty code.
+        if not is_ascii(console_lines[-1]):
+            console_lines[-1] = "corrupted line"
+
     #toDo: how do we make sure that console lines wraps??  How do I deal with newlines?
 
 def add_input_char(newChar):

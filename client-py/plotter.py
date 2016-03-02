@@ -348,7 +348,8 @@ if __name__ == "__main__":
       try:
         #add this byte to the most recent plot line.
         #print(chr(next_byte), end='')
-        cp.append_console_line(chr(next_byte))
+        if (next_byte < 256) and (next_byte > 0): #AKA, if it's a legal character (let's filter out all of the not-legal stuff)
+          cp.append_console_line(chr(next_byte))
         if csv_logger[0]:
           csv_logger[0].add_char(chr(next_byte))
       except UnicodeEncodeError:
