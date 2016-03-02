@@ -13,6 +13,10 @@ line_to_send = None #the line to send.  Originally None, this code sets it to so
 
 height, width = 10,10 #just initial guesses.  They'll be overwritten first time show is called.
 
+last_recieved = time.time()
+packet_timeout = .1 #100ms between explicitly saying i've had bad packets.  Any issues less than that timeframe long will just get considered as the same packet.
+
+incoming_byte_stream_to_console = ""
 
 def run():
     #usually used for testing purposes.  The while true has to be located elsewhere if there's more code that needs a while true.
@@ -121,20 +125,50 @@ def add_console_line(newline):
     console_lines = console_lines[-MAX_CONSOLE_LINES:]
 
 def append_console_line(newChar):
-    #append newChar to the most recent console line.  correctly handle \n and \r
-    
+    #append newChar to the string that's being built for console line.  correctly handle \n and \r
+    #somewhere, I want that if this line hasn't been updated within some timeout, just pring the thing.
     global console_lines
+    global last_recieved
+    global incoming_byte_stream_to_console
+
+    last_recieved = time.time()
+    #print("newchar is " + str(newChar) + '\n')
+
     if newChar == '\n':
-        add_console_line("")
+        #ok, it's time to add the line!
+        add_console_line(incoming_byte_stream_to_console)
+        incoming_byte_stream_to_console = ""
     elif newChar == '\r':
         #yup, do nothing.
         pass
-
+    elif (ord(newChar) < 32) or (ord(newChar) > 126):
+        pass
+        #do nothing.  These characters aren't human-legible.
     else:
-        console_lines[-1] += newChar #append new char to console lines.  I tested it, this part works
+        incoming_byte_stream_to_console += newChar
+
+        '''
+        new_line = console_lines[-1] + newChar
+        if is_ascii(new_line):
+            #ok, it's good.  Add it.
+            console_lines[-1] = new_line
+        else:
+            #bad line, if i added it curses would crash.  I can't. 
+            if (time.time() - last_corrupted) > packet_timeout:
+                #ok i have a new bad packet.
+                console_lines[-1] = "corrupted line"
+                add_console_line("")
+            else:
+                console_lines[-1] = "" #just silently kill the packet.
+            last_corrupted = time.time()
+        '''
+
+        #console_lines[-1] += newChar #append new char to console lines.  I tested it, this part works
         #making sure that console_lines don't include nasty code.
-        if not is_ascii(console_lines[-1]):
-            console_lines[-1] = "corrupted line"
+        #if not is_ascii(console_lines[-1]):
+            #don't add it.
+        #    console_lines[-1] = "corrupted line"
+        #    add_console_line("")
 
     #toDo: how do we make sure that console lines wraps??  How do I deal with newlines?
 
@@ -162,6 +196,7 @@ def show():
     global width
     global MAX_CONSOLE_LINES
     global console_lines
+    global incoming_byte_stream_to_console
 
     new_height, new_width = stdscr.getmaxyx()    #do this so screen will dynamically resise, if I do my job right.
 
@@ -178,6 +213,14 @@ def show():
         console_lines = console_lines[-MAX_CONSOLE_LINES:]
     height = new_height
     width = new_width
+
+
+    if (time.time() - last_recieved) > packet_timeout:
+        if len(incoming_byte_stream_to_console) > 0:
+            #and make sure to check that i even have anything to print
+            #it's time to print the incoming byte stream, i'm not gonna get anymore.
+            add_console_line(incoming_byte_stream_to_console)
+            incoming_byte_stream_to_console = ""
 
 
     #2 parts currently: input line, and the console output.  Screen only gets updated 
