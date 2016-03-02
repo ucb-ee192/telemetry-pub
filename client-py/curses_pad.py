@@ -54,7 +54,8 @@ def user_input():
       elif c == 263: #apparently backspace is 263 in curses land, not 8
         delete_input_char()
         #user just hit 'delete'
-    stdscr.refresh()
+    #stdscr.refresh()
+    stdscr.noutrefresh() 
 
 
 def show_input_line(text):
@@ -63,11 +64,9 @@ def show_input_line(text):
     global width
 
 
-
     input_win = curses.newwin(1, width, height - 1, 0)
     input_win.addstr(0, 0, ">>> " + text)
     input_win.refresh()
-
 
 
 def is_ascii(s):
@@ -111,9 +110,7 @@ def show_console(lines):
     y2 = height -1 #so we don't run off the end
     x2 = width -1 #to all the way on the right, minus 1
     
-    time.sleep(.05) #needed to prevent flickering.  Don't know why.
-    console_pad.refresh(0,0, y1,x1,y2,x2)
-
+    console_pad.noutrefresh(0,0, y1,x1,y2,x2)
 
 
 def add_console_line(newline):
@@ -183,13 +180,11 @@ def show():
     width = new_width
 
 
-    #2 parts currently: input line, and the console output.
+    #2 parts currently: input line, and the console output.  Screen only gets updated 
     show_input_line(input_line)
     show_console(console_lines)
 
 
-    stdscr.refresh()
-    #show updates
 
 if __name__ == "__main__":
     print("Hello World")
