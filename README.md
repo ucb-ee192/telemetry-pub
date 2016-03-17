@@ -21,13 +21,15 @@ The [protocol spec](../master/docs/protocol.tex) defines a binary wire format al
 ## Quickstart
 ### Plotter setup
 Telemetry depends on these:
-- Python (ideally 3.4 or later, may also work on 2.7)
+- Python (ideally 2.7.  The graphing features were designed for 3.4 or later, but the serial console is 2.7 only)
 - numpy 1.9.2 or later
 - matplotlib 1.4.3 or later
 - PySerial
 
 #### On Windows
-For Windows platforms, [Python](https://www.python.org/downloads/), [numpy](http://sourceforge.net/projects/numpy/files/NumPy/), [matplotlib](http://matplotlib.org/downloads.html) and can be downloaded.
+For Windows platforms, [Python](https://www.python.org/downloads/), [numpy](http://sourceforge.net/projects/numpy/files/NumPy/), [matplotlib](http://matplotlib.org/downloads.html) and [curses] (https://github.com/jmcb/python-pdcurses/blob/master/INSTALL.rst) (make sure to choose the correct version of python) must be downloaded & installed.
+
+Currently only python 2.7 is compatable with the serial terminal.
 
 Other software can be installed through pip, Python's package manager. pip is located in your Python/Scripts folder, and the installation commands for the necessary packages are:
 
@@ -35,14 +37,16 @@ Other software can be installed through pip, Python's package manager. pip is lo
 
 `pip install six python-dateutil pyparsing`
 
-#### On Linux
-For Linux platforms, the required software should be available from the OS package manager
+`pip install future`
 
-On Debian-based platforms, including Ubuntu, the installation commands for the necessary packages are:
+#### On Linux & Mac OS
+For Linux & Mac platforms, the required software should be available from the OS package manager
 
-sudo pip install future --upgrade
+On Debian-based platforms, including Ubuntu (This works on mac too!) the installation commands for the necessary packages are:
 
-sudo pip install matplotlib
+`sudo pip install future --upgrade`
+
+`sudo pip install matplotlib`
 
 ### Transmitter library setup
 Transmitter library sources are in `telemetry/server-cpp`. Add the folder to your include search directory and add all the `.cpp` files to your build. Your platform should be automatically detected based on common `#define`s, like `ARDUINO` for Arduino targets and `__MBED__` for mbed targets.
@@ -78,6 +82,7 @@ telemetry::Numeric<uint32_t> tele_time_ms(telemetry_obj, "time", "Time", "ms", 0
 telemetry::NumericArray<uint16_t, 128> tele_linescan(telemetry_obj, "linescan", "Linescan", "ADC", 0);
 telemetry::Numeric<float> tele_motor_pwm(telemetry_obj, "motor", "Motor PWM", "%DC", 0);
 ```
+*Note: for default plotter usage, you must include a Numeric object with the name "Time" for the plotter to plot on the x axis*
 
 In general, the constructor signatures for Telemetry data objects are:
 - `template <typename T> Numeric(Telemetry& telemetry_container, const char* internal_name, const char* display_name, const char* units, T init_value)`
