@@ -69,6 +69,7 @@ telemetry::Telemetry telemetry_obj(telemetry_hal);
 For mbed, instantiate it with a MODSERIAL object (which provides transmit and receive buffering):
 ```c++
 MODSERIAL telemetry_serial(PTA2, PTA1);  // PTA2 as TX, PTA1 as RX
+telemetry_serial.baud(38400); // This rate should match with how you start the plotter.
 telemetry::MbedHal telemetry_hal(telemetry_serial);
 telemetry::Telemetry telemetry_obj(telemetry_hal);
 ```
@@ -157,7 +158,7 @@ The plotter is located in `telemetry/client-py/plotter.py` and can be directly e
 - Independent variable name: defaults to `time`.
 - Independent variable span: defaults to 10,000 (or 10 seconds, if your units are in milliseconds).
 
-The plotter must be running when the header is transmitted, otherwise it will fail to decode the data packets (and notify you of such). The plotter will automatically reinitialize upon receiving a new header.
+The plotter must be running when the header is transmitted, otherwise it will fail to decode the data packets (and notify you of such). The plotter will automatically reinitialize upon receiving a new header, so you should reset the MCU after you open the plotter.
 
 This simple plotter graphs all the data against a selected independent variable (like time). Numeric data is plotted as a line graph and array-numeric data is plotted as a waterfall / spectrograph-style graph. Regular UART data (like from `printf`s) will be routed to the console. All received data, including from `printf`s, is logged to a CSV. A new CSV is created each time a new header packet is received, with a timestamped filename. This can be disabled by giving an empty filename prefix.
 
