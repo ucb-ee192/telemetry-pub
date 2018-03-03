@@ -156,8 +156,7 @@ Bandwidth limits: the amount of data you can send is limited by your microcontro
 
 ### server-c
 - Data can only be sent from server to client (can easily be fixed by adding input buffer and related logic to do_io())
-- Data packets are malloced and free'd with each do_io. This only needs to be done once (in theory you can overwrite packets).
-- Does not seem to work with more than 4 variables. Plotter says "packet dropped"
+- Does not seem to work with more than 4 variables. Plotter says "packet dropped" (potentially fixed?)
 - only works with 32 bit data types currently (float, int32, uint32_t)
 
 ### server-cpp
